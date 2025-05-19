@@ -3,6 +3,7 @@ Base Tower class for the Tower Defense Game
 """
 import pygame
 import math
+import random
 from typing import List, Dict, Any, Tuple, Optional
 import os
 
@@ -48,6 +49,13 @@ class Tower:
         # Special properties
         self.splash_radius = tower_data.get('splash_radius', 0)
         self.buff_multiplier = tower_data.get('buff_multiplier', 1.0)
+
+        # Advanced properties for upgrades
+        self.adds_burning = False
+        self.burning_damage_multiplier = 1.0
+        self.adds_critical = False
+        self.critical_chance = 0.1  # 10% chance by default if critical hits are enabled
+        self.adds_special_ability = False
 
     def update(self, current_time: float, enemies: List[Any]) -> Optional[Dict[str, Any]]:
         """
@@ -104,13 +112,24 @@ class Tower:
         Returns:
             Dictionary with projectile data
         """
+        # Calculate actual damage (apply critical hit if applicable)
+        actual_damage = self.damage
+        is_critical = False
+
+        if self.adds_critical and random.random() < self.critical_chance:
+            actual_damage *= 2  # Double damage for critical hits
+            is_critical = True
+
         return {
             'x': self.x,
             'y': self.y,
             'target': self.target,
-            'damage': self.damage,
+            'damage': actual_damage,
             'tower_type': self.tower_type,
-            'splash_radius': self.splash_radius
+            'splash_radius': self.splash_radius,
+            'adds_burning': self.adds_burning,
+            'burning_damage_multiplier': self.burning_damage_multiplier,
+            'is_critical': is_critical
         }
 
     def draw(self, surface: pygame.Surface) -> None:
@@ -164,14 +183,24 @@ class Tower:
             self.splash_radius *= upgrade_data['splash_radius_multiplier']
         if 'buff_multiplier' in upgrade_data:
             self.buff_multiplier = upgrade_data['buff_multiplier']
+
+        # Special abilities
         if 'adds_burning' in upgrade_data:
             self.adds_burning = upgrade_data['adds_burning']
+        if 'burning_damage_multiplier' in upgrade_data:
+            self.burning_damage_multiplier *= upgrade_data['burning_damage_multiplier']
+        if 'adds_critical' in upgrade_data:
+            self.adds_critical = upgrade_data['adds_critical']
+        if 'critical_chance' in upgrade_data:
+            self.critical_chance = upgrade_data['critical_chance']
+        if 'adds_special_ability' in upgrade_data:
+            self.adds_special_ability = upgrade_data['adds_special_ability']
 
         # Increment the upgrade level for this path
         self.upgrades[path] += 1
 
-        # If we upgraded one path to level 2, lock the other path
-        if self.upgrades[path] == 2:
+        # If we upgraded one path to level 3, lock the other path
+        if self.upgrades[path] == 3:
             other_path = 'path2' if path == 'path1' else 'path1'
             if self.upgrades[other_path] == 0:
                 # Lock the other path by removing it
