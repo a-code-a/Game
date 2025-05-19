@@ -254,6 +254,22 @@ class GameManager:
         """Toggle the game pause state"""
         self.paused = not self.paused
 
+    def set_tower_targeting(self, strategy: str) -> bool:
+        """
+        Set the targeting strategy for the selected tower
+
+        Args:
+            strategy: Targeting strategy to set
+
+        Returns:
+            True if successful, False if no tower is selected
+        """
+        if not self.selected_tower:
+            return False
+
+        self.selected_tower.set_targeting_strategy(strategy)
+        return True
+
     def draw(self, surface: pygame.Surface) -> None:
         """
         Draw the game state

@@ -183,6 +183,15 @@ class Game:
         elif action == 'sell_tower':
             self.game_manager.sell_selected_tower()
 
+        elif action == 'set_targeting':
+            self.game_manager.set_tower_targeting(action_info['strategy'])
+
+        elif action == 'deselect_tower':
+            # Deselect the current tower
+            if self.game_manager.selected_tower:
+                self.game_manager.selected_tower.selected = False
+                self.game_manager.selected_tower = None
+
     def update(self) -> None:
         """Update game state"""
         if self.current_screen == "main_menu":

@@ -12,7 +12,7 @@ from constants import (
     COMIC_DARK, COMIC_LIGHT
 )
 from utils import draw_text
-from towers.tower import Tower
+from towers.tower import Tower, TARGET_CLOSEST, TARGET_FIRST, TARGET_LAST, TARGET_RANDOM
 
 class HUD:
     """Heads-Up Display for the game"""
@@ -136,80 +136,82 @@ class HUD:
                   (SCREEN_WIDTH - SIDEBAR_WIDTH + 10, 75),
                   UI_TEXT, font_size=20, bold=True, outline=True)
 
-        # Draw tower selection section header
-        tower_section_header = pygame.Rect(
-            SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
-            self.tower_section_y,
-            SIDEBAR_WIDTH - 20,
-            25
-        )
-        pygame.draw.rect(surface, COMIC_DARK, tower_section_header, border_radius=8)
-        draw_text(surface, "Select Tower",
-                  (tower_section_header.centerx, tower_section_header.centery),
-                  UI_TEXT, font_size=16, bold=True, centered=True, outline=True)
-
-        # Draw tower buttons with comic-style
-        for i, button in enumerate(self.tower_buttons):
-            # Button background with comic-style
-            if button['type'] == self.selected_tower_type:
-                color = UI_BUTTON_HOVER
-                border_color = COMIC_YELLOW
-            elif game_state['coins'] < button['cost']:
-                color = UI_BUTTON_DISABLED  # Darker if can't afford
-                border_color = COMIC_DARK
-            else:
-                color = UI_BUTTON
-                border_color = COMIC_DARK
-
-            # Draw button with rounded corners and 3D effect
-            button_rect = button['rect']
-
-            # Shadow effect (3D)
-            shadow_rect = button_rect.copy()
-            shadow_rect.x += 2
-            shadow_rect.y += 2
-            pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=8)
-
-            # Main button
-            pygame.draw.rect(surface, color, button_rect, border_radius=8)
-            pygame.draw.rect(surface, border_color, button_rect, 2, border_radius=8)
-
-            # Tower icon (placeholder - could be replaced with actual tower images)
-            icon_colors = {
-                'basic': COMIC_BLUE,
-                'sniper': COMIC_GREEN,
-                'area': COMIC_ORANGE,
-                'support': COMIC_PURPLE
-            }
-            icon_color = icon_colors.get(button['type'], COMIC_BLUE)
-            icon_rect = pygame.Rect(
-                button_rect.x + 8,
-                button_rect.y + 10,
-                30,
-                30
+        # Only show tower selection if no tower is selected
+        if not game_state['selected_tower']:
+            # Draw tower selection section header
+            tower_section_header = pygame.Rect(
+                SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
+                self.tower_section_y,
+                SIDEBAR_WIDTH - 20,
+                25
             )
-            pygame.draw.rect(surface, icon_color, icon_rect, border_radius=5)
-            pygame.draw.rect(surface, COMIC_DARK, icon_rect, 2, border_radius=5)
+            pygame.draw.rect(surface, COMIC_DARK, tower_section_header, border_radius=8)
+            draw_text(surface, "Select Tower",
+                      (tower_section_header.centerx, tower_section_header.centery),
+                      UI_TEXT, font_size=16, bold=True, centered=True, outline=True)
 
-            # Tower name and cost in a more compact layout
-            draw_text(surface, button['type'].capitalize(),
-                      (button_rect.x + 45, button_rect.y + 12),
-                      UI_TEXT, font_size=16, bold=True, outline=True)
+            # Draw tower buttons with comic-style
+            for i, button in enumerate(self.tower_buttons):
+                # Button background with comic-style
+                if button['type'] == self.selected_tower_type:
+                    color = UI_BUTTON_HOVER
+                    border_color = COMIC_YELLOW
+                elif game_state['coins'] < button['cost']:
+                    color = UI_BUTTON_DISABLED  # Darker if can't afford
+                    border_color = COMIC_DARK
+                else:
+                    color = UI_BUTTON
+                    border_color = COMIC_DARK
 
-            # Cost with coin icon
-            coin_icon_size = 14
-            coin_icon_rect = pygame.Rect(
-                button_rect.x + 45,
-                button_rect.y + 30,
-                coin_icon_size,
-                coin_icon_size
-            )
-            pygame.draw.circle(surface, COMIC_YELLOW, coin_icon_rect.center, coin_icon_size/2)
-            pygame.draw.circle(surface, COMIC_DARK, coin_icon_rect.center, coin_icon_size/2, 1)
+                # Draw button with rounded corners and 3D effect
+                button_rect = button['rect']
 
-            draw_text(surface, f"{button['cost']}",
-                      (button_rect.x + 65, button_rect.y + 30),
-                      UI_HIGHLIGHT, font_size=16, bold=True, outline=True)
+                # Shadow effect (3D)
+                shadow_rect = button_rect.copy()
+                shadow_rect.x += 2
+                shadow_rect.y += 2
+                pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=8)
+
+                # Main button
+                pygame.draw.rect(surface, color, button_rect, border_radius=8)
+                pygame.draw.rect(surface, border_color, button_rect, 2, border_radius=8)
+
+                # Tower icon (placeholder - could be replaced with actual tower images)
+                icon_colors = {
+                    'basic': COMIC_BLUE,
+                    'sniper': COMIC_GREEN,
+                    'area': COMIC_ORANGE,
+                    'support': COMIC_PURPLE
+                }
+                icon_color = icon_colors.get(button['type'], COMIC_BLUE)
+                icon_rect = pygame.Rect(
+                    button_rect.x + 8,
+                    button_rect.y + 10,
+                    30,
+                    30
+                )
+                pygame.draw.rect(surface, icon_color, icon_rect, border_radius=5)
+                pygame.draw.rect(surface, COMIC_DARK, icon_rect, 2, border_radius=5)
+
+                # Tower name and cost in a more compact layout
+                draw_text(surface, button['type'].capitalize(),
+                          (button_rect.x + 45, button_rect.y + 12),
+                          UI_TEXT, font_size=16, bold=True, outline=True)
+
+                # Cost with coin icon
+                coin_icon_size = 14
+                coin_icon_rect = pygame.Rect(
+                    button_rect.x + 45,
+                    button_rect.y + 30,
+                    coin_icon_size,
+                    coin_icon_size
+                )
+                pygame.draw.circle(surface, COMIC_YELLOW, coin_icon_rect.center, coin_icon_size/2)
+                pygame.draw.circle(surface, COMIC_DARK, coin_icon_rect.center, coin_icon_size/2, 1)
+
+                draw_text(surface, f"{button['cost']}",
+                          (button_rect.x + 65, button_rect.y + 30),
+                          UI_HIGHLIGHT, font_size=16, bold=True, outline=True)
 
         # Draw wave control button with comic-style
         wave_button_rect = pygame.Rect(
@@ -260,9 +262,9 @@ class HUD:
             tower: Selected tower
             coins: Current coin count
         """
-        # Calculate positions to avoid overlapping
-        # Tower info panel starts after tower selection section
-        info_panel_y = self.tower_section_y + self.tower_section_height + 10
+        # Calculate positions - when a tower is selected, we use the full sidebar
+        # Tower info panel starts right after the header
+        info_panel_y = self.header_height + 10
         info_panel_height = 120  # Reduced height
 
         # Main info panel with comic-style
@@ -566,14 +568,114 @@ class HUD:
                           (locked_rect.centerx, locked_rect.centery),
                           UI_TEXT, font_size=12, bold=True, centered=True, outline=True)
 
-        # Sell button with comic-style - positioned at the bottom of the sidebar
+        # Targeting options section - positioned after upgrade section
+        targeting_section_rect = pygame.Rect(
+            SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
+            upgrade_section_rect.bottom + 10,
+            SIDEBAR_WIDTH - 20,
+            90  # Height for targeting options
+        )
+
+        # Shadow effect
+        shadow_rect = targeting_section_rect.copy()
+        shadow_rect.x += 3
+        shadow_rect.y += 3
+        pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=8)
+
+        # Main panel
+        pygame.draw.rect(surface, UI_PANEL, targeting_section_rect, border_radius=8)
+        pygame.draw.rect(surface, COMIC_DARK, targeting_section_rect, 2, border_radius=8)
+
+        # Targeting header
+        header_rect = pygame.Rect(
+            targeting_section_rect.x,
+            targeting_section_rect.y,
+            targeting_section_rect.width,
+            25  # Header height
+        )
+        pygame.draw.rect(surface, COMIC_DARK, header_rect, border_radius=8)
+
+        draw_text(surface, "Targeting Options",
+                  (header_rect.centerx, header_rect.centery),
+                  UI_TEXT, font_size=16, bold=True, centered=True, outline=True)
+
+        # Targeting buttons
+        button_y = targeting_section_rect.y + 30
+        button_height = 25
+        button_spacing = 5
+        button_width = (targeting_section_rect.width - 20) // 2  # Two buttons per row
+
+        # Define targeting options
+        targeting_options = [
+            {"name": "Closest", "value": TARGET_CLOSEST, "color": COMIC_BLUE},
+            {"name": "First", "value": TARGET_FIRST, "color": COMIC_GREEN},
+            {"name": "Last", "value": TARGET_LAST, "color": COMIC_ORANGE},
+            {"name": "Random", "value": TARGET_RANDOM, "color": COMIC_PURPLE}
+        ]
+
+        # Draw targeting buttons in a 2x2 grid
+        for i, option in enumerate(targeting_options):
+            row = i // 2
+            col = i % 2
+
+            button_rect = pygame.Rect(
+                targeting_section_rect.x + 10 + col * (button_width + 10),
+                button_y + row * (button_height + button_spacing),
+                button_width,
+                button_height
+            )
+
+            # Highlight current strategy
+            is_selected = tower.targeting_strategy == option["value"]
+            color = option["color"] if is_selected else UI_BUTTON
+            border_color = COMIC_YELLOW if is_selected else COMIC_DARK
+
+            # Shadow effect
+            shadow_rect = button_rect.copy()
+            shadow_rect.x += 2
+            shadow_rect.y += 2
+            pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=5)
+
+            # Button
+            pygame.draw.rect(surface, color, button_rect, border_radius=5)
+            pygame.draw.rect(surface, border_color, button_rect, 2, border_radius=5)
+
+            # Button text
+            draw_text(surface, option["name"],
+                      (button_rect.centerx, button_rect.centery),
+                      UI_TEXT, font_size=14, bold=True, centered=True, outline=True)
+
+        # Sell button with comic-style - positioned below the targeting section
         # Calculate position to ensure it doesn't overlap with other elements
         sell_rect = pygame.Rect(
             SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
-            SCREEN_HEIGHT - 110,  # Fixed position from bottom
+            targeting_section_rect.bottom + 10,  # Position relative to targeting section
             SIDEBAR_WIDTH - 20,
             30  # Reduced height
         )
+
+        # Back button to return to tower selection
+        back_button_rect = pygame.Rect(
+            SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
+            sell_rect.bottom + 10,
+            SIDEBAR_WIDTH - 20,
+            30
+        )
+
+        # Shadow effect
+        shadow_rect = back_button_rect.copy()
+        shadow_rect.x += 2
+        shadow_rect.y += 2
+        pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=8)
+
+        # Main button
+        pygame.draw.rect(surface, UI_BUTTON, back_button_rect, border_radius=8)
+        pygame.draw.rect(surface, COMIC_DARK, back_button_rect, 2, border_radius=8)
+
+        # Back button text
+        draw_text(surface, "Back to Tower Selection",
+                  (back_button_rect.centerx, back_button_rect.centery),
+                  UI_TEXT, font_size=16, bold=True, centered=True, outline=True)
 
         # Shadow effect
         shadow_rect = sell_rect.copy()
@@ -727,7 +829,7 @@ class HUD:
             tower = game_state['selected_tower']
 
             # Calculate positions based on our new layout
-            info_panel_y = self.tower_section_y + self.tower_section_height + 10
+            info_panel_y = self.header_height + 10
             info_panel_height = 120
 
             # Upgrade section position - matches the draw method
@@ -758,14 +860,71 @@ class HUD:
                             else:
                                 return {'action': 'not_enough_coins'}
 
-            # Check sell button - fixed position from bottom
+            # Check targeting options
+            info_panel_y = self.header_height + 10
+            info_panel_height = 120
+
+            # Calculate targeting section position - matches the draw method
+            upgrade_section_rect = pygame.Rect(
+                SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
+                info_panel_y + info_panel_height + 10,
+                SIDEBAR_WIDTH - 20,
+                140
+            )
+
+            targeting_section_rect = pygame.Rect(
+                SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
+                upgrade_section_rect.bottom + 10,
+                SIDEBAR_WIDTH - 20,
+                90
+            )
+
+            button_y = targeting_section_rect.y + 30
+            button_height = 25
+            button_spacing = 5
+            button_width = (targeting_section_rect.width - 20) // 2
+
+            # Define targeting options (same as in draw method)
+            targeting_options = [
+                {"name": "Closest", "value": TARGET_CLOSEST, "color": COMIC_BLUE},
+                {"name": "First", "value": TARGET_FIRST, "color": COMIC_GREEN},
+                {"name": "Last", "value": TARGET_LAST, "color": COMIC_ORANGE},
+                {"name": "Random", "value": TARGET_RANDOM, "color": COMIC_PURPLE}
+            ]
+
+            # Check if any targeting button was clicked
+            for i, option in enumerate(targeting_options):
+                row = i // 2
+                col = i % 2
+
+                button_rect = pygame.Rect(
+                    targeting_section_rect.x + 10 + col * (button_width + 10),
+                    button_y + row * (button_height + button_spacing),
+                    button_width,
+                    button_height
+                )
+
+                if button_rect.collidepoint(pos):
+                    return {'action': 'set_targeting', 'strategy': option["value"]}
+
+            # Check sell button - positioned below targeting section
             sell_rect = pygame.Rect(
                 SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
-                SCREEN_HEIGHT - 110,
+                targeting_section_rect.bottom + 10,  # Position relative to targeting section
                 SIDEBAR_WIDTH - 20,
                 30
             )
             if sell_rect.collidepoint(pos):
                 return {'action': 'sell_tower'}
+
+            # Check back button
+            back_button_rect = pygame.Rect(
+                SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
+                sell_rect.bottom + 10,
+                SIDEBAR_WIDTH - 20,
+                30
+            )
+            if back_button_rect.collidepoint(pos):
+                return {'action': 'deselect_tower'}
 
         return {'action': 'none'}

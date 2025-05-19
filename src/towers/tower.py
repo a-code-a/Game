@@ -9,6 +9,12 @@ import os
 
 from utils import load_image, calculate_distance, calculate_angle, rotate_image
 
+# Targeting strategy constants
+TARGET_CLOSEST = "closest"  # Default - target closest enemy to tower
+TARGET_FIRST = "first"      # Target enemy furthest along the path
+TARGET_LAST = "last"        # Target enemy closest to the start
+TARGET_RANDOM = "random"    # Target random enemy in range
+
 class Tower:
     """Base class for all towers"""
 
@@ -45,6 +51,7 @@ class Tower:
         self.last_shot_time = 0
         self.angle = 0
         self.selected = False
+        self.targeting_strategy = TARGET_CLOSEST  # Default targeting strategy
 
         # Special properties
         self.splash_radius = tower_data.get('splash_radius', 0)
@@ -88,22 +95,44 @@ class Tower:
 
     def find_target(self, enemies: List[Any]) -> None:
         """
-        Find the closest enemy in range
+        Find a target based on the current targeting strategy
 
         Args:
             enemies: List of enemy objects
         """
-        closest_enemy = None
-        closest_distance = float('inf')
-
+        # Filter enemies that are in range and alive
+        in_range_enemies = []
         for enemy in enemies:
             if enemy.alive:
                 distance = calculate_distance((self.x, self.y), (enemy.x, enemy.y))
-                if distance <= self.range and distance < closest_distance:
-                    closest_enemy = enemy
-                    closest_distance = distance
+                if distance <= self.range:
+                    in_range_enemies.append((enemy, distance))
 
-        self.target = closest_enemy
+        # If no enemies in range, clear target
+        if not in_range_enemies:
+            self.target = None
+            return
+
+        # Apply targeting strategy
+        if self.targeting_strategy == TARGET_CLOSEST:
+            # Target closest enemy to tower (default)
+            self.target = min(in_range_enemies, key=lambda e: e[1])[0]
+
+        elif self.targeting_strategy == TARGET_FIRST:
+            # Target enemy furthest along the path (highest path_index)
+            self.target = max(in_range_enemies, key=lambda e: e[0].path_index)[0]
+
+        elif self.targeting_strategy == TARGET_LAST:
+            # Target enemy closest to the start (lowest path_index)
+            self.target = min(in_range_enemies, key=lambda e: e[0].path_index)[0]
+
+        elif self.targeting_strategy == TARGET_RANDOM:
+            # Target random enemy in range
+            self.target = random.choice(in_range_enemies)[0]
+
+        else:
+            # Fallback to closest if strategy is unknown
+            self.target = min(in_range_enemies, key=lambda e: e[1])[0]
 
     def shoot(self) -> Dict[str, Any]:
         """
@@ -251,3 +280,24 @@ class Tower:
 
         # Return the upgrade data
         return self.upgrade_paths[path][current_level]
+
+    def set_targeting_strategy(self, strategy: str) -> None:
+        """
+        Set the targeting strategy for this tower
+
+        Args:
+            strategy: One of the TARGET_* constants
+        """
+        if strategy in [TARGET_CLOSEST, TARGET_FIRST, TARGET_LAST, TARGET_RANDOM]:
+            self.targeting_strategy = strategy
+            # Clear current target to force re-targeting on next update
+            self.target = None
+
+    def get_targeting_strategy(self) -> str:
+        """
+        Get the current targeting strategy
+
+        Returns:
+            Current targeting strategy
+        """
+        return self.targeting_strategy
