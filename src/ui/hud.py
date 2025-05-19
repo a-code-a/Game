@@ -23,21 +23,29 @@ class HUD:
         self.tower_buttons = []
         self.selected_tower_type = None
 
-        # Create tower buttons
-        y_offset = 100
+        # Define sections for better organization
+        self.header_height = 90
+        self.tower_section_y = self.header_height + 10
+        self.tower_section_height = 240  # Adjusted height for tower buttons
+
+        # Create tower buttons - more compact layout
+        y_offset = self.tower_section_y + 30  # Start after section header
+        button_height = 50  # Reduced height
+        button_spacing = 10  # Space between buttons
+
         for tower_type in TOWER_TYPES:
             button_rect = pygame.Rect(
                 SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
                 y_offset,
                 SIDEBAR_WIDTH - 20,
-                60
+                button_height
             )
             self.tower_buttons.append({
                 'type': tower_type,
                 'rect': button_rect,
                 'cost': TOWER_TYPES[tower_type]['cost']
             })
-            y_offset += 70
+            y_offset += button_height + button_spacing
 
     def draw(self, surface: pygame.Surface, game_state: Dict[str, Any]) -> None:
         """
@@ -106,6 +114,18 @@ class HUD:
                   (SCREEN_WIDTH - SIDEBAR_WIDTH + 10, 75),
                   UI_TEXT, font_size=20, bold=True, outline=True)
 
+        # Draw tower selection section header
+        tower_section_header = pygame.Rect(
+            SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
+            self.tower_section_y,
+            SIDEBAR_WIDTH - 20,
+            25
+        )
+        pygame.draw.rect(surface, COMIC_DARK, tower_section_header, border_radius=8)
+        draw_text(surface, "Select Tower",
+                  (tower_section_header.centerx, tower_section_header.centery),
+                  UI_TEXT, font_size=16, bold=True, centered=True, outline=True)
+
         # Draw tower buttons with comic-style
         for i, button in enumerate(self.tower_buttons):
             # Button background with comic-style
@@ -124,13 +144,13 @@ class HUD:
 
             # Shadow effect (3D)
             shadow_rect = button_rect.copy()
-            shadow_rect.x += 3
-            shadow_rect.y += 3
-            pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=10)
+            shadow_rect.x += 2
+            shadow_rect.y += 2
+            pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=8)
 
             # Main button
-            pygame.draw.rect(surface, color, button_rect, border_radius=10)
-            pygame.draw.rect(surface, border_color, button_rect, 3, border_radius=10)
+            pygame.draw.rect(surface, color, button_rect, border_radius=8)
+            pygame.draw.rect(surface, border_color, button_rect, 2, border_radius=8)
 
             # Tower icon (placeholder - could be replaced with actual tower images)
             icon_colors = {
@@ -141,23 +161,33 @@ class HUD:
             }
             icon_color = icon_colors.get(button['type'], COMIC_BLUE)
             icon_rect = pygame.Rect(
-                button_rect.x + 10,
-                button_rect.y + 15,
+                button_rect.x + 8,
+                button_rect.y + 10,
                 30,
                 30
             )
             pygame.draw.rect(surface, icon_color, icon_rect, border_radius=5)
             pygame.draw.rect(surface, COMIC_DARK, icon_rect, 2, border_radius=5)
 
-            # Tower name with comic-style text
+            # Tower name and cost in a more compact layout
             draw_text(surface, button['type'].capitalize(),
-                      (button_rect.x + 50, button_rect.y + 15),
-                      UI_TEXT, font_size=20, bold=True, outline=True)
+                      (button_rect.x + 45, button_rect.y + 12),
+                      UI_TEXT, font_size=16, bold=True, outline=True)
 
-            # Cost with comic-style text
-            draw_text(surface, f"Cost: {button['cost']}",
-                      (button_rect.x + 50, button_rect.y + 40),
-                      UI_HIGHLIGHT, font_size=18, bold=True, outline=True)
+            # Cost with coin icon
+            coin_icon_size = 14
+            coin_icon_rect = pygame.Rect(
+                button_rect.x + 45,
+                button_rect.y + 30,
+                coin_icon_size,
+                coin_icon_size
+            )
+            pygame.draw.circle(surface, COMIC_YELLOW, coin_icon_rect.center, coin_icon_size/2)
+            pygame.draw.circle(surface, COMIC_DARK, coin_icon_rect.center, coin_icon_size/2, 1)
+
+            draw_text(surface, f"{button['cost']}",
+                      (button_rect.x + 65, button_rect.y + 30),
+                      UI_HIGHLIGHT, font_size=16, bold=True, outline=True)
 
         # Draw wave control button with comic-style
         wave_button_rect = pygame.Rect(
@@ -208,24 +238,28 @@ class HUD:
             tower: Selected tower
             coins: Current coin count
         """
+        # Calculate positions to avoid overlapping
+        # Tower info panel starts after tower selection section
+        info_panel_y = self.tower_section_y + self.tower_section_height + 10
+        info_panel_height = 120  # Reduced height
+
         # Main info panel with comic-style
-        info_panel_height = 150
         info_rect = pygame.Rect(
             SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
-            SCREEN_HEIGHT - 350,  # Moved up to avoid overlap
+            info_panel_y,
             SIDEBAR_WIDTH - 20,
             info_panel_height
         )
 
         # Shadow effect
         shadow_rect = info_rect.copy()
-        shadow_rect.x += 4
-        shadow_rect.y += 4
-        pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=10)
+        shadow_rect.x += 3
+        shadow_rect.y += 3
+        pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=8)
 
         # Main panel
-        pygame.draw.rect(surface, UI_PANEL, info_rect, border_radius=10)
-        pygame.draw.rect(surface, COMIC_DARK, info_rect, 3, border_radius=10)
+        pygame.draw.rect(surface, UI_PANEL, info_rect, border_radius=8)
+        pygame.draw.rect(surface, COMIC_DARK, info_rect, 2, border_radius=8)
 
         # Tower icon and name in a comic-style header
         icon_colors = {
@@ -241,53 +275,55 @@ class HUD:
             info_rect.x,
             info_rect.y,
             info_rect.width,
-            40
+            30  # Reduced height
         )
-        pygame.draw.rect(surface, icon_color, header_rect, border_radius=10)
-        pygame.draw.rect(surface, COMIC_DARK, header_rect, 3, border_radius=10)
+        pygame.draw.rect(surface, icon_color, header_rect, border_radius=8)
+        pygame.draw.rect(surface, COMIC_DARK, header_rect, 2, border_radius=8)
 
         # Tower name with comic-style text
         draw_text(surface, f"{tower.tower_type.capitalize()} Tower",
                   (header_rect.centerx, header_rect.centery),
-                  UI_TEXT, font_size=22, bold=True, centered=True, outline=True)
+                  UI_TEXT, font_size=18, bold=True, centered=True, outline=True)
 
-        # Tower stats with comic-style icons
-        stats_y = info_rect.y + 50
+        # Tower stats with comic-style icons in a grid layout
+        # First row
+        stats_y = info_rect.y + 40
+        col_width = 85  # Width for each stat column
 
         # Damage stat
-        damage_icon_rect = pygame.Rect(info_rect.x + 10, stats_y, 20, 20)
+        damage_icon_rect = pygame.Rect(info_rect.x + 10, stats_y, 16, 16)
         pygame.draw.rect(surface, COMIC_RED, damage_icon_rect, border_radius=3)
-        pygame.draw.rect(surface, COMIC_DARK, damage_icon_rect, 2, border_radius=3)
+        pygame.draw.rect(surface, COMIC_DARK, damage_icon_rect, 1, border_radius=3)
         draw_text(surface, f"DMG: {tower.damage:.1f}",
-                  (info_rect.x + 40, stats_y + 2),
-                  UI_TEXT, font_size=16, bold=True, outline=True)
+                  (info_rect.x + 32, stats_y + 1),
+                  UI_TEXT, font_size=14, bold=True, outline=True)
 
         # Range stat
-        range_icon_rect = pygame.Rect(info_rect.x + 110, stats_y, 20, 20)
-        pygame.draw.circle(surface, COMIC_BLUE, range_icon_rect.center, 10)
-        pygame.draw.circle(surface, COMIC_DARK, range_icon_rect.center, 10, 2)
+        range_icon_rect = pygame.Rect(info_rect.x + col_width + 10, stats_y, 16, 16)
+        pygame.draw.circle(surface, COMIC_BLUE, range_icon_rect.center, 8)
+        pygame.draw.circle(surface, COMIC_DARK, range_icon_rect.center, 8, 1)
         draw_text(surface, f"RNG: {tower.range:.0f}",
-                  (info_rect.x + 140, stats_y + 2),
-                  UI_TEXT, font_size=16, bold=True, outline=True)
+                  (info_rect.x + col_width + 32, stats_y + 1),
+                  UI_TEXT, font_size=14, bold=True, outline=True)
 
-        # Cooldown stat
+        # Second row - Cooldown stat
         cooldown_y = stats_y + 25
-        cooldown_icon_rect = pygame.Rect(info_rect.x + 10, cooldown_y, 20, 20)
+        cooldown_icon_rect = pygame.Rect(info_rect.x + 10, cooldown_y, 16, 16)
         pygame.draw.polygon(surface, COMIC_GREEN, [
-            (cooldown_icon_rect.x, cooldown_icon_rect.y + 10),
-            (cooldown_icon_rect.x + 20, cooldown_icon_rect.y),
-            (cooldown_icon_rect.x + 20, cooldown_icon_rect.y + 20)
+            (cooldown_icon_rect.x, cooldown_icon_rect.y + 8),
+            (cooldown_icon_rect.x + 16, cooldown_icon_rect.y),
+            (cooldown_icon_rect.x + 16, cooldown_icon_rect.y + 16)
         ])
         pygame.draw.polygon(surface, COMIC_DARK, [
-            (cooldown_icon_rect.x, cooldown_icon_rect.y + 10),
-            (cooldown_icon_rect.x + 20, cooldown_icon_rect.y),
-            (cooldown_icon_rect.x + 20, cooldown_icon_rect.y + 20)
-        ], 2)
+            (cooldown_icon_rect.x, cooldown_icon_rect.y + 8),
+            (cooldown_icon_rect.x + 16, cooldown_icon_rect.y),
+            (cooldown_icon_rect.x + 16, cooldown_icon_rect.y + 16)
+        ], 1)
         draw_text(surface, f"SPD: {1/tower.cooldown:.1f}/s",
-                  (info_rect.x + 40, cooldown_y + 2),
-                  UI_TEXT, font_size=16, bold=True, outline=True)
+                  (info_rect.x + 32, cooldown_y + 1),
+                  UI_TEXT, font_size=14, bold=True, outline=True)
 
-        # Special abilities with comic-style badges
+        # Special abilities with compact badges
         special_abilities = []
         special_colors = []
 
@@ -307,62 +343,79 @@ class HUD:
             special_abilities.append("Special")
             special_colors.append(COMIC_PURPLE)
 
+        # Draw special abilities in a more compact way
         if special_abilities:
             special_y = cooldown_y + 25
+            draw_text(surface, "Special:",
+                      (info_rect.x + 10, special_y + 1),
+                      UI_TEXT, font_size=14, bold=True, outline=True)
+
+            badge_x = info_rect.x + 70
+            badge_y = special_y
+            badge_height = 18
+
             for i, (ability, color) in enumerate(zip(special_abilities, special_colors)):
-                # Create a comic-style badge for each ability
-                badge_width = len(ability) * 8 + 20
+                # Create smaller badges for each ability
+                badge_width = min(len(ability) * 6 + 10, 80)
+
+                # If we would go off the panel, move to next row
+                if badge_x + badge_width > info_rect.right - 5:
+                    badge_x = info_rect.x + 70
+                    badge_y += badge_height + 2
+
+                    # If we're out of vertical space, stop drawing
+                    if badge_y + badge_height > info_rect.bottom - 5:
+                        break
+
                 badge_rect = pygame.Rect(
-                    info_rect.x + 10 + (i * (badge_width + 5)),
-                    special_y,
+                    badge_x,
+                    badge_y,
                     badge_width,
-                    22
+                    badge_height
                 )
 
-                # Don't draw if it would go outside the panel
-                if badge_rect.right > info_rect.right - 5:
-                    break
-
-                pygame.draw.rect(surface, color, badge_rect, border_radius=8)
-                pygame.draw.rect(surface, COMIC_DARK, badge_rect, 2, border_radius=8)
+                pygame.draw.rect(surface, color, badge_rect, border_radius=5)
+                pygame.draw.rect(surface, COMIC_DARK, badge_rect, 1, border_radius=5)
                 draw_text(surface, ability,
                           (badge_rect.centerx, badge_rect.centery),
-                          UI_TEXT, font_size=14, bold=True, centered=True, outline=True)
+                          UI_TEXT, font_size=12, bold=True, centered=True, outline=True)
 
-        # Upgrade paths section
+                badge_x += badge_width + 5
+
+        # Upgrade paths section - positioned after tower info
         upgrade_section_rect = pygame.Rect(
             SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
             info_rect.bottom + 10,
             SIDEBAR_WIDTH - 20,
-            160  # Height for two upgrade paths
+            140  # Reduced height for two upgrade paths
         )
 
         # Shadow effect
         shadow_rect = upgrade_section_rect.copy()
-        shadow_rect.x += 4
-        shadow_rect.y += 4
-        pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=10)
+        shadow_rect.x += 3
+        shadow_rect.y += 3
+        pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=8)
 
         # Main panel
-        pygame.draw.rect(surface, UI_PANEL, upgrade_section_rect, border_radius=10)
-        pygame.draw.rect(surface, COMIC_DARK, upgrade_section_rect, 3, border_radius=10)
+        pygame.draw.rect(surface, UI_PANEL, upgrade_section_rect, border_radius=8)
+        pygame.draw.rect(surface, COMIC_DARK, upgrade_section_rect, 2, border_radius=8)
 
         # Upgrade paths header
         header_rect = pygame.Rect(
             upgrade_section_rect.x,
             upgrade_section_rect.y,
             upgrade_section_rect.width,
-            30
+            25  # Reduced height
         )
-        pygame.draw.rect(surface, COMIC_DARK, header_rect, border_radius=10)
+        pygame.draw.rect(surface, COMIC_DARK, header_rect, border_radius=8)
 
         draw_text(surface, "Upgrade Paths",
                   (header_rect.centerx, header_rect.centery),
-                  UI_TEXT, font_size=18, bold=True, centered=True, outline=True)
+                  UI_TEXT, font_size=16, bold=True, centered=True, outline=True)
 
-        # Upgrade buttons with comic-style
-        upgrade_y = upgrade_section_rect.y + 40
-        path_height = 55
+        # Upgrade buttons with comic-style - more compact layout
+        upgrade_y = upgrade_section_rect.y + 30  # Reduced spacing
+        path_height = 50  # Reduced height
 
         for path_idx, path in enumerate(['path1', 'path2']):
             path_name = "Path 1: Speed/Range" if path == 'path1' else "Path 2: Damage/Special"
@@ -372,20 +425,20 @@ class HUD:
             level = tower.upgrades.get(path, 0)
             max_level = len(tower.upgrade_paths.get(path, [])) if path in tower.upgrade_paths else 0
 
-            # Path header background
+            # Path header background - more compact
             path_header_rect = pygame.Rect(
                 upgrade_section_rect.x + 5,
                 upgrade_y + path_idx * path_height,
                 upgrade_section_rect.width - 10,
-                20
+                18  # Reduced height
             )
             pygame.draw.rect(surface, path_color, path_header_rect, border_radius=5)
-            pygame.draw.rect(surface, COMIC_DARK, path_header_rect, 2, border_radius=5)
+            pygame.draw.rect(surface, COMIC_DARK, path_header_rect, 1, border_radius=5)
 
-            # Path name and level
+            # Path name and level - smaller font
             draw_text(surface, f"{path_name} ({level}/{max_level})",
                       (path_header_rect.centerx, path_header_rect.centery),
-                      UI_TEXT, font_size=14, bold=True, centered=True, outline=True)
+                      UI_TEXT, font_size=12, bold=True, centered=True, outline=True)
 
             # Draw upgrade button if available
             if path in tower.upgrade_paths:
@@ -394,12 +447,12 @@ class HUD:
                     upgrade_info = tower.get_upgrade_info(path)
                     button_rect = pygame.Rect(
                         upgrade_section_rect.x + 5,
-                        upgrade_y + 25 + path_idx * path_height,
+                        upgrade_y + 22 + path_idx * path_height,  # Adjusted position
                         upgrade_section_rect.width - 10,
-                        25
+                        22  # Reduced height
                     )
 
-                    # Shadow effect
+                    # Shadow effect - smaller
                     shadow_rect = button_rect.copy()
                     shadow_rect.x += 2
                     shadow_rect.y += 2
@@ -408,23 +461,34 @@ class HUD:
                     # Button color based on affordability
                     color = UI_SUCCESS if coins >= upgrade_cost else UI_BUTTON_DISABLED
                     pygame.draw.rect(surface, color, button_rect, border_radius=5)
-                    pygame.draw.rect(surface, path_color, button_rect, 2, border_radius=5)
+                    pygame.draw.rect(surface, path_color, button_rect, 1, border_radius=5)
 
-                    # Upgrade name and cost
+                    # Upgrade name and cost - more compact with coin icon
+                    coin_icon_size = 12
+                    coin_icon_rect = pygame.Rect(
+                        button_rect.x + 5,
+                        button_rect.centery - coin_icon_size//2,
+                        coin_icon_size,
+                        coin_icon_size
+                    )
+                    pygame.draw.circle(surface, COMIC_YELLOW, coin_icon_rect.center, coin_icon_size/2)
+                    pygame.draw.circle(surface, COMIC_DARK, coin_icon_rect.center, coin_icon_size/2, 1)
+
+                    # Upgrade name with cost
                     name_text = f"{upgrade_info['name']} (${upgrade_cost})"
                     draw_text(surface, name_text,
-                              (button_rect.centerx, button_rect.centery),
-                              UI_TEXT, font_size=14, bold=True, centered=True, outline=True)
+                              (button_rect.centerx + 5, button_rect.centery),
+                              UI_TEXT, font_size=12, bold=True, centered=True, outline=True)
 
                     # Draw description tooltip on hover
                     mouse_pos = pygame.mouse.get_pos()
                     if button_rect.collidepoint(mouse_pos) and 'description' in upgrade_info:
                         # Comic-style speech bubble tooltip
-                        tooltip_width = len(upgrade_info['description']) * 6 + 20
-                        tooltip_height = 30
+                        tooltip_width = min(len(upgrade_info['description']) * 5 + 20, 180)
+                        tooltip_height = 25
                         tooltip_rect = pygame.Rect(
                             mouse_pos[0] - tooltip_width // 2,
-                            mouse_pos[1] - tooltip_height - 15,
+                            mouse_pos[1] - tooltip_height - 10,
                             tooltip_width,
                             tooltip_height
                         )
@@ -438,71 +502,72 @@ class HUD:
                             tooltip_rect.top = 5
 
                         # Draw speech bubble
-                        pygame.draw.rect(surface, UI_PANEL, tooltip_rect, border_radius=8)
-                        pygame.draw.rect(surface, COMIC_DARK, tooltip_rect, 2, border_radius=8)
+                        pygame.draw.rect(surface, UI_PANEL, tooltip_rect, border_radius=5)
+                        pygame.draw.rect(surface, COMIC_DARK, tooltip_rect, 1, border_radius=5)
 
                         # Draw little triangle pointer
                         pointer_points = [
-                            (tooltip_rect.centerx - 10, tooltip_rect.bottom),
-                            (tooltip_rect.centerx + 10, tooltip_rect.bottom),
-                            (tooltip_rect.centerx, tooltip_rect.bottom + 10)
+                            (tooltip_rect.centerx - 8, tooltip_rect.bottom),
+                            (tooltip_rect.centerx + 8, tooltip_rect.bottom),
+                            (tooltip_rect.centerx, tooltip_rect.bottom + 8)
                         ]
                         pygame.draw.polygon(surface, UI_PANEL, pointer_points)
-                        pygame.draw.polygon(surface, COMIC_DARK, pointer_points, 2)
+                        pygame.draw.polygon(surface, COMIC_DARK, pointer_points, 1)
 
                         draw_text(surface, upgrade_info['description'],
                                   (tooltip_rect.centerx, tooltip_rect.centery),
-                                  UI_TEXT, font_size=14, bold=True, centered=True, outline=True)
+                                  UI_TEXT, font_size=12, bold=True, centered=True, outline=True)
                 else:
                     # Path is maxed out
                     maxed_rect = pygame.Rect(
                         upgrade_section_rect.x + 5,
-                        upgrade_y + 25 + path_idx * path_height,
+                        upgrade_y + 22 + path_idx * path_height,
                         upgrade_section_rect.width - 10,
-                        25
+                        22
                     )
                     pygame.draw.rect(surface, UI_BUTTON_DISABLED, maxed_rect, border_radius=5)
-                    pygame.draw.rect(surface, path_color, maxed_rect, 2, border_radius=5)
+                    pygame.draw.rect(surface, path_color, maxed_rect, 1, border_radius=5)
                     draw_text(surface, "Maxed Out",
                               (maxed_rect.centerx, maxed_rect.centery),
-                              UI_TEXT, font_size=14, bold=True, centered=True, outline=True)
+                              UI_TEXT, font_size=12, bold=True, centered=True, outline=True)
             elif level > 0:
                 # Path is locked because the other path is upgraded
                 locked_rect = pygame.Rect(
                     upgrade_section_rect.x + 5,
-                    upgrade_y + 25 + path_idx * path_height,
+                    upgrade_y + 22 + path_idx * path_height,
                     upgrade_section_rect.width - 10,
-                    25
+                    22
                 )
                 pygame.draw.rect(surface, UI_BUTTON_DISABLED, locked_rect, border_radius=5)
-                pygame.draw.rect(surface, UI_DANGER, locked_rect, 2, border_radius=5)
+                pygame.draw.rect(surface, UI_DANGER, locked_rect, 1, border_radius=5)
                 draw_text(surface, "Locked",
                           (locked_rect.centerx, locked_rect.centery),
-                          UI_TEXT, font_size=14, bold=True, centered=True, outline=True)
+                          UI_TEXT, font_size=12, bold=True, centered=True, outline=True)
 
-        # Sell button with comic-style
+        # Sell button with comic-style - positioned at the bottom of the sidebar
+        # Calculate position to ensure it doesn't overlap with other elements
         sell_rect = pygame.Rect(
             SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
-            upgrade_section_rect.bottom + 10,
+            SCREEN_HEIGHT - 110,  # Fixed position from bottom
             SIDEBAR_WIDTH - 20,
-            35
+            30  # Reduced height
         )
 
         # Shadow effect
         shadow_rect = sell_rect.copy()
-        shadow_rect.x += 3
-        shadow_rect.y += 3
+        shadow_rect.x += 2
+        shadow_rect.y += 2
         pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=8)
 
         # Main button
         pygame.draw.rect(surface, UI_DANGER, sell_rect, border_radius=8)
-        pygame.draw.rect(surface, COMIC_DARK, sell_rect, 3, border_radius=8)
+        pygame.draw.rect(surface, COMIC_DARK, sell_rect, 2, border_radius=8)
 
         # Sell text with comic-style
         sell_value = tower.cost // 2
         draw_text(surface, f"Sell Tower (${sell_value})",
                   (sell_rect.centerx, sell_rect.centery),
-                  UI_TEXT, font_size=18, bold=True, centered=True, outline=True)
+                  UI_TEXT, font_size=16, bold=True, centered=True, outline=True)
 
     def handle_click(self, pos: Tuple[int, int], game_state: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -524,10 +589,10 @@ class HUD:
                 else:
                     return {'action': 'not_enough_coins'}
 
-        # Check wave button (updated position to match the draw method)
+        # Check wave button
         wave_button_rect = pygame.Rect(
             SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
-            SCREEN_HEIGHT - 60,  # Moved up to avoid overlap
+            SCREEN_HEIGHT - 60,
             SIDEBAR_WIDTH - 20,
             40
         )
@@ -538,20 +603,20 @@ class HUD:
         if game_state['selected_tower']:
             tower = game_state['selected_tower']
 
-            # Calculate panel positions based on our new layout
-            info_panel_height = 150
-            info_rect_y = SCREEN_HEIGHT - 350
+            # Calculate positions based on our new layout
+            info_panel_y = self.tower_section_y + self.tower_section_height + 10
+            info_panel_height = 120
 
-            # Upgrade section position
+            # Upgrade section position - matches the draw method
             upgrade_section_rect = pygame.Rect(
                 SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
-                info_rect_y + info_panel_height + 10,
+                info_panel_y + info_panel_height + 10,
                 SIDEBAR_WIDTH - 20,
-                160
+                140
             )
 
-            upgrade_y = upgrade_section_rect.y + 40
-            path_height = 55
+            upgrade_y = upgrade_section_rect.y + 30
+            path_height = 50
 
             # Check upgrade buttons for each path
             for path_idx, path in enumerate(['path1', 'path2']):
@@ -560,9 +625,9 @@ class HUD:
                     if upgrade_cost > 0:
                         button_rect = pygame.Rect(
                             upgrade_section_rect.x + 5,
-                            upgrade_y + 25 + path_idx * path_height,
+                            upgrade_y + 22 + path_idx * path_height,
                             upgrade_section_rect.width - 10,
-                            25
+                            22
                         )
                         if button_rect.collidepoint(pos):
                             if game_state['coins'] >= upgrade_cost:
@@ -570,12 +635,12 @@ class HUD:
                             else:
                                 return {'action': 'not_enough_coins'}
 
-            # Check sell button
+            # Check sell button - fixed position from bottom
             sell_rect = pygame.Rect(
                 SCREEN_WIDTH - SIDEBAR_WIDTH + 10,
-                upgrade_section_rect.bottom + 10,
+                SCREEN_HEIGHT - 110,
                 SIDEBAR_WIDTH - 20,
-                35
+                30
             )
             if sell_rect.collidepoint(pos):
                 return {'action': 'sell_tower'}
