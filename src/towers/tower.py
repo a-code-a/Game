@@ -53,6 +53,13 @@ class Tower:
         self.selected = False
         self.targeting_strategy = TARGET_CLOSEST  # Default targeting strategy
 
+        # Cache for range circle surface
+        self.range_circle_surface = None
+        self.last_range = self.range  # Track range changes for cache invalidation
+
+        # Pre-calculated points for range circle (will be populated when needed)
+        self.range_circle_points = []
+
         # Special properties
         self.splash_radius = tower_data.get('splash_radius', 0)
         self.buff_multiplier = tower_data.get('buff_multiplier', 1.0)
@@ -170,14 +177,54 @@ class Tower:
         """
         # Draw range circle if selected
         if self.selected:
-            transparent_surface = pygame.Surface((self.range * 2, self.range * 2), pygame.SRCALPHA)
-            pygame.draw.circle(transparent_surface, (0, 255, 0, 64), (self.range, self.range), self.range)
-            surface.blit(transparent_surface, (self.x - self.range, self.y - self.range))
+            # Check if we need to recalculate the range circle points
+            if not self.range_circle_points or self.last_range != self.range:
+                # Use fewer segments for better performance
+                self._calculate_range_circle_points(16)  # 16 segments = 8 dashes
+                self.last_range = self.range
+
+            # Draw the range circle directly on the surface
+            # This is more efficient than creating and blitting a separate surface
+            for start_point, end_point in self.range_circle_points:
+                # Adjust points to tower position
+                start_pos = (int(self.x + start_point[0]), int(self.y + start_point[1]))
+                end_pos = (int(self.x + end_point[0]), int(self.y + end_point[1]))
+                # Draw the line segment
+                pygame.draw.line(surface, (0, 255, 0), start_pos, end_pos, 2)
 
         # Draw the tower
         rotated_image, rotated_rect = rotate_image(self.image, math.degrees(-self.angle) - 90)
         rotated_rect.center = (self.x, self.y)
         surface.blit(rotated_image, rotated_rect)
+
+    def _calculate_range_circle_points(self, num_segments: int) -> None:
+        """
+        Pre-calculate points for drawing the range circle
+
+        Args:
+            num_segments: Number of segments in the circle
+        """
+        self.range_circle_points = []
+        radius = self.range
+        segment_angle = 360 / num_segments
+
+        # Calculate points for dashed circle (every other segment)
+        for i in range(0, num_segments, 2):
+            start_angle = i * segment_angle
+            end_angle = (i + 1) * segment_angle
+
+            # Convert to radians
+            start_rad = math.radians(start_angle)
+            end_rad = math.radians(end_angle)
+
+            # Calculate points relative to center (0,0)
+            start_x = radius * math.cos(start_rad)
+            start_y = radius * math.sin(start_rad)
+            end_x = radius * math.cos(end_rad)
+            end_y = radius * math.sin(end_rad)
+
+            # Store the points
+            self.range_circle_points.append(((start_x, start_y), (end_x, end_y)))
 
     def upgrade(self, path: str) -> bool:
         """
@@ -206,6 +253,8 @@ class Tower:
             self.damage *= upgrade_data['damage_multiplier']
         if 'range_multiplier' in upgrade_data:
             self.range *= upgrade_data['range_multiplier']
+            # Force range circle to be recalculated
+            self.range_circle_points = []
         if 'cooldown_multiplier' in upgrade_data:
             self.cooldown *= upgrade_data['cooldown_multiplier']
         if 'splash_radius_multiplier' in upgrade_data:
