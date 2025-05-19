@@ -70,25 +70,15 @@ class Map1(Map):
             self.path_grid.add((end_x, end_y))
 
     def _set_buildable_grid(self) -> None:
-        """Set buildable areas (all cells except path and border)"""
+        """Set buildable areas (all cells except the path itself)"""
         self.buildable_grid = set()
 
         # For each cell in the grid
         for x in range(self.grid_width):
             for y in range(self.grid_height):
-                # Skip path cells
+                # Skip path cells - only the actual path is non-buildable
                 if (x, y) in self.path_grid:
                     continue
 
-                # Skip border cells (1 cell buffer around path)
-                is_border = False
-                for dx in [-1, 0, 1]:
-                    for dy in [-1, 0, 1]:
-                        if (x + dx, y + dy) in self.path_grid:
-                            is_border = True
-                            break
-                    if is_border:
-                        break
-
-                if not is_border:
-                    self.buildable_grid.add((x, y))
+                # All other cells are buildable
+                self.buildable_grid.add((x, y))
