@@ -28,6 +28,25 @@ class HUD:
         self.tower_section_y = self.header_height + 10
         self.tower_section_height = 240  # Adjusted height for tower buttons
 
+        # Create menu button in top left corner
+        self.menu_button_size = 40
+        self.menu_button_rect = pygame.Rect(
+            10,  # Left margin
+            10,  # Top margin
+            self.menu_button_size,
+            self.menu_button_size
+        )
+
+        # Menu dropdown state
+        self.menu_open = False
+        self.menu_options = [
+            {"text": "Settings", "action": "settings"},
+            {"text": "Main Menu", "action": "main_menu"},
+            {"text": "Resume", "action": "resume"}
+        ]
+        self.menu_option_height = 35
+        self.menu_width = 150
+
         # Create tower buttons - more compact layout
         y_offset = self.tower_section_y + 30  # Start after section header
         button_height = 50  # Reduced height
@@ -55,6 +74,9 @@ class HUD:
             surface: Pygame surface to draw on
             game_state: Current game state
         """
+        # Draw menu button in top left corner
+        self._draw_menu_button(surface)
+
         # Draw sidebar background with comic-style gradient
         pygame.draw.rect(surface, UI_BG, self.sidebar_rect)
 
@@ -569,6 +591,80 @@ class HUD:
                   (sell_rect.centerx, sell_rect.centery),
                   UI_TEXT, font_size=16, bold=True, centered=True, outline=True)
 
+    def _draw_menu_button(self, surface: pygame.Surface) -> None:
+        """
+        Draw the menu button and dropdown if open
+
+        Args:
+            surface: Pygame surface to draw on
+        """
+        # Draw menu button with comic-style
+        # Shadow effect
+        shadow_rect = self.menu_button_rect.copy()
+        shadow_rect.x += 2
+        shadow_rect.y += 2
+        pygame.draw.rect(surface, COMIC_DARK, shadow_rect, border_radius=8)
+
+        # Main button
+        button_color = UI_BUTTON_HOVER if self.menu_open else UI_BUTTON
+        pygame.draw.rect(surface, button_color, self.menu_button_rect, border_radius=8)
+        pygame.draw.rect(surface, COMIC_DARK, self.menu_button_rect, 2, border_radius=8)
+
+        # Draw hamburger menu icon
+        line_width = self.menu_button_size - 16
+        line_height = 3
+        line_spacing = 6
+        start_x = self.menu_button_rect.x + 8
+        start_y = self.menu_button_rect.y + 12
+
+        for i in range(3):
+            line_rect = pygame.Rect(
+                start_x,
+                start_y + i * line_spacing,
+                line_width,
+                line_height
+            )
+            pygame.draw.rect(surface, UI_TEXT, line_rect, border_radius=1)
+
+        # Draw dropdown menu if open
+        if self.menu_open:
+            dropdown_height = len(self.menu_options) * self.menu_option_height
+            dropdown_rect = pygame.Rect(
+                self.menu_button_rect.x,
+                self.menu_button_rect.bottom + 5,
+                self.menu_width,
+                dropdown_height
+            )
+
+            # Shadow effect
+            shadow_dropdown = dropdown_rect.copy()
+            shadow_dropdown.x += 3
+            shadow_dropdown.y += 3
+            pygame.draw.rect(surface, COMIC_DARK, shadow_dropdown, border_radius=8)
+
+            # Main dropdown panel
+            pygame.draw.rect(surface, UI_PANEL, dropdown_rect, border_radius=8)
+            pygame.draw.rect(surface, COMIC_DARK, dropdown_rect, 2, border_radius=8)
+
+            # Draw options
+            for i, option in enumerate(self.menu_options):
+                option_rect = pygame.Rect(
+                    dropdown_rect.x,
+                    dropdown_rect.y + i * self.menu_option_height,
+                    dropdown_rect.width,
+                    self.menu_option_height
+                )
+
+                # Highlight on hover
+                mouse_pos = pygame.mouse.get_pos()
+                if option_rect.collidepoint(mouse_pos):
+                    pygame.draw.rect(surface, UI_BUTTON_HOVER, option_rect, border_radius=0)
+
+                # Draw option text
+                draw_text(surface, option["text"],
+                          (dropdown_rect.x + 10, option_rect.centery),
+                          UI_TEXT, font_size=16, bold=True, outline=True)
+
     def handle_click(self, pos: Tuple[int, int], game_state: Dict[str, Any]) -> Dict[str, Any]:
         """
         Handle mouse click on the HUD
@@ -580,6 +676,33 @@ class HUD:
         Returns:
             Dictionary with action information
         """
+        # Check menu button
+        if self.menu_button_rect.collidepoint(pos):
+            self.menu_open = not self.menu_open
+            return {'action': 'toggle_menu'}
+
+        # Check menu options if menu is open
+        if self.menu_open:
+            dropdown_height = len(self.menu_options) * self.menu_option_height
+            dropdown_rect = pygame.Rect(
+                self.menu_button_rect.x,
+                self.menu_button_rect.bottom + 5,
+                self.menu_width,
+                dropdown_height
+            )
+
+            if dropdown_rect.collidepoint(pos):
+                # Determine which option was clicked
+                option_idx = (pos[1] - dropdown_rect.y) // self.menu_option_height
+                if 0 <= option_idx < len(self.menu_options):
+                    action = self.menu_options[option_idx]["action"]
+                    self.menu_open = False  # Close menu after selection
+                    return {'action': action}
+            else:
+                # Close menu if clicked outside
+                self.menu_open = False
+                return {'action': 'close_menu'}
+
         # Check tower buttons
         for button in self.tower_buttons:
             if button['rect'].collidepoint(pos):

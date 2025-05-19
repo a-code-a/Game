@@ -116,10 +116,20 @@ class Game:
                 self.game_manager = GameManager(self.current_map)
 
         elif self.current_screen == "game":
-            # Check if click is in the sidebar
+            # First check for menu button clicks (can be anywhere on screen)
+            action_info = self.hud.handle_click(pos, self.game_manager.get_game_state())
+            action = action_info.get('action', 'none')
+
+            # Handle menu actions
+            if action in ['main_menu', 'settings', 'resume']:
+                self.handle_menu_action(action)
+                return
+            elif action in ['toggle_menu', 'close_menu']:
+                return  # Just toggle menu state, no further action needed
+
+            # If not a menu action, continue with normal game clicks
             if pos[0] > SCREEN_WIDTH - SIDEBAR_WIDTH:
                 # Handle HUD click
-                action_info = self.hud.handle_click(pos, self.game_manager.get_game_state())
                 self.handle_hud_action(action_info)
             else:
                 # Handle game area click
@@ -132,6 +142,24 @@ class Game:
                 else:
                     # Try to select a tower
                     self.game_manager.select_tower(pos)
+
+    def handle_menu_action(self, action: str) -> None:
+        """
+        Handle menu button actions
+
+        Args:
+            action: Action to perform
+        """
+        if action == 'main_menu':
+            self.current_screen = "main_menu"
+            self.game_manager = GameManager(self.current_map)
+        elif action == 'settings':
+            # For now, just pause the game
+            # In the future, this could open a settings menu
+            self.current_screen = "pause_menu"
+        elif action == 'resume':
+            # Resume from pause menu
+            self.current_screen = "game"
 
     def handle_hud_action(self, action_info: Dict[str, Any]) -> None:
         """
@@ -215,7 +243,6 @@ class Game:
                 mouse_pos = pygame.mouse.get_pos()
                 if mouse_pos[0] < SCREEN_WIDTH - SIDEBAR_WIDTH:
                     grid_pos = self.current_map.pixel_to_grid(mouse_pos)
-                    pixel_pos = self.current_map.grid_to_pixel(grid_pos)
 
                     # Draw placement indicator
                     color = (0, 255, 0, 128) if self.tower_placement_valid else (255, 0, 0, 128)
