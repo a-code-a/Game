@@ -4,6 +4,8 @@ Utility functions for the Tower Defense Game
 import os
 import pygame
 import math
+import numpy as np
+from collections import namedtuple
 from typing import Tuple, List, Dict, Any, Optional
 
 def load_image(filename: str, scale: float = 1.0, convert_alpha: bool = True) -> pygame.Surface:
@@ -184,3 +186,51 @@ def draw_text(surface: pygame.Surface, text: str, pos: Tuple[int, int],
     surface.blit(text_surface, text_rect)
 
     return text_rect
+
+def draw_aa_circle(surface: pygame.Surface, color: Tuple[int, int, int], center: Tuple[int, int], radius: int, width: int = 0):
+    """
+    Draw an antialiased circle (for range indicators, highlights, etc.)
+    """
+    import pygame.gfxdraw
+    if width == 0:
+        pygame.gfxdraw.filled_circle(surface, center[0], center[1], radius, color)
+        pygame.gfxdraw.aacircle(surface, center[0], center[1], radius, color)
+    else:
+        for r in range(radius, radius - width, -1):
+            pygame.gfxdraw.aacircle(surface, center[0], center[1], r, color)
+
+class FloatingText:
+    """
+    Floating text for damage numbers, coins, etc.
+    """
+    def __init__(self, text, pos, color=(255,255,255), duration=0.7, rise=30):
+        self.text = text
+        self.start_pos = pos
+        self.color = color
+        self.duration = duration
+        self.rise = rise
+        self.time = 0
+        self.alive = True
+        self.font = pygame.font.SysFont('Arial', 18, bold=True)
+
+    def update(self, dt):
+        self.time += dt
+        if self.time > self.duration:
+            self.alive = False
+
+    def draw(self, surface):
+        if not self.alive:
+            return
+        alpha = max(0, 255 - int(255 * (self.time / self.duration)))
+        y_offset = int(self.rise * (self.time / self.duration))
+        text_surface = self.font.render(self.text, True, self.color)
+        text_surface.set_alpha(alpha)
+        rect = text_surface.get_rect(center=(self.start_pos[0], self.start_pos[1] - y_offset))
+        # Drop shadow
+        shadow = self.font.render(self.text, True, (0,0,0))
+        shadow.set_alpha(alpha)
+        shadow_rect = rect.copy()
+        shadow_rect.x += 2
+        shadow_rect.y += 2
+        surface.blit(shadow, shadow_rect)
+        surface.blit(text_surface, rect)

@@ -37,8 +37,8 @@ class Game:
 
         # Create game objects
         self.current_map = Map1()
-        self.game_manager = GameManager(self.current_map)
         self.hud = HUD()
+        self.game_manager = GameManager(self.current_map, hud=self.hud)
 
         # Tower placement
         self.placing_tower = False
@@ -57,7 +57,7 @@ class Game:
             self.draw()
 
             # Cap the frame rate
-            self.clock.tick(FPS)
+            self.clock.tick(FPS)  # Use FPS from constants.py
 
         # Clean up
         pygame.quit()
@@ -206,6 +206,8 @@ class Game:
         elif self.current_screen == "game":
             # Update game manager
             self.game_manager.update()
+            # Update HUD floating texts
+            self.hud.update(self.clock.get_time() / 1000.0)
 
             # Check for game over
             game_state = self.game_manager.get_game_state()
@@ -246,19 +248,15 @@ class Game:
         elif self.current_screen == "game":
             # Draw the game
             self.game_manager.draw(self.screen)
-
             # Draw tower placement preview
             if self.placing_tower:
                 mouse_pos = pygame.mouse.get_pos()
                 if mouse_pos[0] < SCREEN_WIDTH - SIDEBAR_WIDTH:
                     grid_pos = self.current_map.pixel_to_grid(mouse_pos)
-
-                    # Draw placement indicator
                     color = (0, 255, 0, 128) if self.tower_placement_valid else (255, 0, 0, 128)
                     indicator = pygame.Surface((self.current_map.grid_size, self.current_map.grid_size), pygame.SRCALPHA)
                     indicator.fill(color)
                     self.screen.blit(indicator, (grid_pos[0] * self.current_map.grid_size, grid_pos[1] * self.current_map.grid_size))
-
             # Draw the HUD
             self.hud.draw(self.screen, self.game_manager.get_game_state())
 

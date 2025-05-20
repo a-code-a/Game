@@ -14,7 +14,7 @@ from maps.map import Map
 class GameManager:
     """Manages the game state and logic"""
 
-    def __init__(self, current_map: Map):
+    def __init__(self, current_map: Map, hud=None):
         """
         Initialize the game manager
 
@@ -45,6 +45,9 @@ class GameManager:
         self.current_time = self.start_time
         self.last_update_time = self.start_time
 
+        # HUD
+        self.hud = hud  # Reference to HUD for floating text
+
     def update(self) -> None:
         """Update the game state"""
         if self.game_over or self.paused:
@@ -54,6 +57,19 @@ class GameManager:
         self.current_time = time.time()
         dt = self.current_time - self.last_update_time
         self.last_update_time = self.current_time
+
+        # --- Spatial partitioning for enemies ---
+        # Create a grid for spatial partitioning (example: 64x64 cells)
+        grid_size = 64
+        grid_width = (self.current_map.grid_width)
+        grid_height = (self.current_map.grid_height)
+        enemy_grid = [[[] for _ in range(grid_height)] for _ in range(grid_width)]
+        for enemy in self.wave_manager.enemies:
+            grid_x = int(enemy.x) // grid_size
+            grid_y = int(enemy.y) // grid_size
+            if 0 <= grid_x < grid_width and 0 <= grid_y < grid_height:
+                enemy_grid[grid_x][grid_y].append(enemy)
+        # Pass enemy_grid to towers for efficient targeting (optional, see tower update)
 
         # Update wave manager
         enemies, wave_complete = self.wave_manager.update(self.current_time, dt)
@@ -68,6 +84,7 @@ class GameManager:
 
         # Update towers
         for tower in self.towers:
+            # Optionally, pass enemy_grid for efficient targeting
             projectile_data = tower.update(self.current_time, enemies)
             if projectile_data:
                 self.create_projectile(projectile_data)
@@ -80,10 +97,16 @@ class GameManager:
             if not projectile.alive:
                 self.projectiles.remove(projectile)
 
-            # Award coins for killed enemies
+            # Award coins for killed enemies and show floating text
             for enemy in hit_enemies:
                 if not enemy.alive and not enemy.reached_end:
                     self.coins += enemy.reward
+                    if self.hud:
+                        self.hud.add_floating_text(f"+{enemy.reward}", (enemy.x, enemy.y-20), (255, 255, 0))
+                else:
+                    # Show floating damage number
+                    if self.hud and hasattr(projectile, 'damage'):
+                        self.hud.add_floating_text(f"-{int(projectile.damage)}", (enemy.x, enemy.y-10), (255, 80, 80))
 
     def create_projectile(self, projectile_data: Dict[str, Any]) -> None:
         """

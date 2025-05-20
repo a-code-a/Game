@@ -11,7 +11,7 @@ from constants import (
     COMIC_BLUE, COMIC_RED, COMIC_GREEN, COMIC_YELLOW, COMIC_ORANGE, COMIC_PURPLE,
     COMIC_DARK, COMIC_LIGHT
 )
-from utils import draw_text
+from utils import draw_text, draw_aa_circle, FloatingText
 from towers.tower import Tower, TARGET_CLOSEST, TARGET_FIRST, TARGET_LAST, TARGET_RANDOM
 
 class HUD:
@@ -65,6 +65,8 @@ class HUD:
                 'cost': TOWER_TYPES[tower_type]['cost']
             })
             y_offset += button_height + button_spacing
+
+        self.floating_texts = []  # For floating damage numbers and effects
 
     def draw(self, surface: pygame.Surface, game_state: Dict[str, Any]) -> None:
         """
@@ -253,9 +255,14 @@ class HUD:
         if game_state['selected_tower']:
             self.draw_tower_info(surface, game_state['selected_tower'], game_state['coins'])
 
+        # Draw floating texts on top of everything
+        for ft in self.floating_texts:
+            ft.draw(surface)
+
     def draw_tower_info(self, surface: pygame.Surface, tower: Tower, coins: int) -> None:
         """
         Draw information about the selected tower
+        Optimized: Avoid unnecessary work and only update tooltips on hover.
 
         Args:
             surface: Pygame surface to draw on
@@ -320,7 +327,7 @@ class HUD:
         pygame.draw.rect(surface, COMIC_DARK, damage_icon_rect, 1, border_radius=3)
         draw_text(surface, f"DMG: {tower.damage:.1f}",
                   (info_rect.x + 32, stats_y + 1),
-                  UI_TEXT, font_size=14, bold=True, outline=True)
+                  UI_TEXT, font_size=14, bold=True, outline=False)
 
         # Range stat
         range_icon_rect = pygame.Rect(info_rect.x + col_width + 10, stats_y, 16, 16)
@@ -328,7 +335,7 @@ class HUD:
         pygame.draw.circle(surface, COMIC_DARK, range_icon_rect.center, 8, 1)
         draw_text(surface, f"RNG: {tower.range:.0f}",
                   (info_rect.x + col_width + 32, stats_y + 1),
-                  UI_TEXT, font_size=14, bold=True, outline=True)
+                  UI_TEXT, font_size=14, bold=True, outline=False)
 
         # Second row - Cooldown stat
         cooldown_y = stats_y + 25
@@ -345,7 +352,7 @@ class HUD:
         ], 1)
         draw_text(surface, f"SPD: {1/tower.cooldown:.1f}/s",
                   (info_rect.x + 32, cooldown_y + 1),
-                  UI_TEXT, font_size=14, bold=True, outline=True)
+                  UI_TEXT, font_size=14, bold=True, outline=False)
 
         # Special abilities with compact badges
         special_abilities = []
@@ -767,6 +774,9 @@ class HUD:
                           (dropdown_rect.x + 10, option_rect.centery),
                           UI_TEXT, font_size=16, bold=True, outline=True)
 
+    def add_floating_text(self, text, pos, color=(255,255,255)):
+        self.floating_texts.append(FloatingText(text, pos, color))
+
     def handle_click(self, pos: Tuple[int, int], game_state: Dict[str, Any]) -> Dict[str, Any]:
         """
         Handle mouse click on the HUD
@@ -928,3 +938,9 @@ class HUD:
                 return {'action': 'deselect_tower'}
 
         return {'action': 'none'}
+
+    def update(self, dt):
+        # Update floating texts
+        self.floating_texts = [ft for ft in self.floating_texts if ft.alive]
+        for ft in self.floating_texts:
+            ft.update(dt)

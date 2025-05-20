@@ -4,9 +4,12 @@ Base Map class for the Tower Defense Game
 import pygame
 from typing import List, Dict, Any, Tuple, Optional, Set
 import os
+from collections import namedtuple
 
 from utils import load_image, grid_to_pixel, pixel_to_grid
 from constants import GRID_SIZE, SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_WIDTH
+
+PathPoint = namedtuple('PathPoint', ['x', 'y'])
 
 class Map:
     """Base class for all maps"""
@@ -38,6 +41,9 @@ class Map:
 
         # Initialize the grid
         self.initialize_grid()
+
+        # Convert path to PathPoint namedtuples for efficiency
+        self.path = [PathPoint(x, y) for (x, y) in self.path]
 
     def initialize_grid(self) -> None:
         """
@@ -107,7 +113,7 @@ class Map:
             surface: Pygame surface to draw on
             show_grid: Whether to show the grid
         """
-        # Draw background
+        # Draw background (pre-rendered for performance)
         surface.blit(self.background, (0, 0))
 
         # Draw grid if requested

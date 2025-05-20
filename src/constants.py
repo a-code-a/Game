@@ -44,7 +44,7 @@ UI_PATH1 = (52, 152, 219)  # Blue
 UI_PATH2 = (230, 126, 34)  # Orange
 
 # Game settings
-FPS = 60
+FPS = 60  # Cap the frame rate to 60 FPS for performance
 GRID_SIZE = 64
 STARTING_COINS = 500
 STARTING_LIVES = 100
